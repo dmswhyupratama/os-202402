@@ -1,0 +1,71 @@
+praktikum:
+  nama_image: xv6-praktikum
+  sistem_operasi: "Microsoft Windows [Version 10.0.26100.3915]"
+  lokasi_folder: "C:\\Users\\LENOVO\\Downloads\\Sistem Operasi\\os-202402-main\\pertemuan5"
+
+  perintah:
+    - cd "Downloads\\Sistem Operasi\\os-202402-main\\pertemuan5"
+    - docker build -t xv6-praktikum .
+    - docker run -it --rm xv6-praktikum
+    - ps,fork,exit
+
+  output_docker_build: |
+    [+] Building 3.6s (9/9) FINISHED                                                                                docker:desktop-linux
+     => [internal] load build definition from Dockerfile                                                                            0.1s
+     => => transferring dockerfile: 369B                                                                                            0.0s
+     => [internal] load metadata for docker.io/library/debian:bullseye                                                              3.1s
+     => [auth] library/debian:pull token for registry-1.docker.io                                                                   0.0s
+     => [internal] load .dockerignore                                                                                               0.1s
+     => => transferring context: 2B                                                                                                 0.0s
+     => [1/4] FROM docker.io/library/debian:bullseye@sha256:2a7f95bcf104c8410bf4d3b13c52f6e0e4334bb2edf8d80c7f9881e49447effe        0.0s
+     => CACHED [2/4] RUN apt-get update && apt-get install -y     build-essential     git     qemu-system-x86     python3     curl  0.0s
+     => CACHED [3/4] WORKDIR /xv6                                                                                                   0.0s
+     => CACHED [4/4] RUN git clone https://github.com/mit-pdos/xv6-public.git .                                                     0.0s
+     => exporting to image                                                                                                          0.0s
+     => => exporting layers                                                                                                         0.0s
+     => => writing image sha256:e8075915aece13484f76e4e00c120af506191c42afeb30ab7a32e79be4c04f40                                    0.0s
+     => => naming to docker.io/library/xv6-praktikum                                                                                0.0s
+
+  output_qemu: |
+    root@76ef2de9d19f:/xv6# make qemu-nox
+    SeaBIOS (version 1.14.0-2)
+
+    iPXE (http://ipxe.org) 00:03.0 CA00 PCI2.10 PnP PMM+1FF8F4C0+1FECF4C0 CA00
+
+    Booting from Hard Disk..xv6...
+    cpu1: starting 1
+    cpu0: starting 0
+    sb: size 1000 nblocks 941 ninodes 200 nlog 30 logstart 2 inodestart 32 bmap start 58
+    init: starting sh
+    $ ls -l
+    ls: cannot open -l
+    $ ls
+    .              1 1 512
+    ..             1 1 512
+    README         2 2 2286
+    cat            2 3 16684
+    echo           2 4 15576
+    forktest       2 5 9284
+    grep           2 6 19856
+    init           2 7 16108
+    kill           2 8 15632
+    ln             2 9 15504
+    ls             2 10 18088
+    mkdir          2 11 15664
+    rm             2 12 15640
+    sh             2 13 31468
+    stressfs       2 14 16516
+    usertests      2 15 67420
+    wc             2 16 17260
+    zombie         2 17 15216
+    console        3 18 0
+    $ ps
+    exec: fail
+    exec ps failed
+    $ fork
+    exec: fail
+    exec fork failed
+    $ exit
+    exec: fail
+    exec exit failed
+    $

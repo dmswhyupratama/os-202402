@@ -1,0 +1,131 @@
+tugas:
+  nama: "Dimas Wahyu Pratama"
+  nim: "240202858"
+  mata_kuliah: "Sistem Operasi"
+  pertemuan: 4
+  deskripsi: "Output praktikum build dan run Docker container"
+  output_terminal: |
+    Microsoft Windows [Version 10.0.26100.3915]
+    (c) Microsoft Corporation. All rights reserved.
+
+    C:\Users\LENOVO>cd "Downloads\Sistem Operasi\os-202402-main\pertemuan4"
+
+    C:\Users\LENOVO\Downloads\Sistem Operasi\os-202402-main\pertemuan4>docker build -t praktikum-os240202858 .
+    [+] Building 1.6s (6/6) FINISHED                                                                                docker:desktop-linux
+    => [internal] load build definition from Dockerfile                                                                            0.0s
+    => => transferring dockerfile: 264B                                                                                            0.0s
+    => WARN: ConsistentInstructionCasing: Command 'From' should match the case of the command majority (uppercase) (line 2)        0.0s
+    => WARN: ConsistentInstructionCasing: Command 'Run' should match the case of the command majority (uppercase) (line 5)         0.0s
+    => [internal] load metadata for docker.io/library/ubuntu:22.04                                                                 1.4s
+    => [internal] load .dockerignore                                                                                               0.0s
+    => => transferring context: 2B                                                                                                 0.0s
+    => [1/2] FROM docker.io/library/ubuntu:22.04@sha256:67cadaff1dca187079fce41360d5a7eb6f7dcd3745e53c79ad5efd8563118240           0.0s
+    => CACHED [2/2] RUN apt-get update && apt-get install -y bash nano curl wget iputils-ping procps net-tools                     0.0s
+    => exporting to image                                                                                                          0.0s
+    => => exporting layers                                                                                                         0.0s
+    => => writing image sha256:35478ff4a9f56064a8e8ee550ccf5399c2c3afce5b5e27c0d79f0f5e742d3967                                    0.0s
+    => => naming to docker.io/library/praktikum-os240202858                                                                        0.0s
+
+    View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/qsgq3ahm95twp1i42qd6fmycs
+
+    2 warnings found (use docker --debug to expand):
+    - ConsistentInstructionCasing: Command 'From' should match the case of the command majority (uppercase) (line 2)
+    - ConsistentInstructionCasing: Command 'Run' should match the case of the command majority (uppercase) (line 5)
+
+    C:\Users\LENOVO\Downloads\Sistem Operasi\os-202402-main\pertemuan4>docker run -it --name praktikum-os240202858 praktikum-os240202858
+    root@fa286a40318a:/# ls
+    bin  boot  dev  etc  home  lib  lib32  lib64  libx32  media  mnt  opt  proc  root  run  sbin  srv  sys  tmp  usr  var
+    root@fa286a40318a:/# ls -l
+    total 56
+    lrwxrwxrwx   1 root root    7 Apr 15 14:03 bin -> usr/bin
+    drwxr-xr-x   2 root root 4096 Apr 18  2022 boot
+    drwxr-xr-x   5 root root  360 May  8 12:38 dev
+    drwxr-xr-x   1 root root 4096 May  8 12:38 etc
+    drwxr-xr-x   2 root root 4096 Apr 18  2022 home
+    lrwxrwxrwx   1 root root    7 Apr 15 14:03 lib -> usr/lib
+    lrwxrwxrwx   1 root root    9 Apr 15 14:03 lib32 -> usr/lib32
+    lrwxrwxrwx   1 root root    9 Apr 15 14:03 lib64 -> usr/lib64
+    lrwxrwxrwx   1 root root   10 Apr 15 14:03 libx32 -> usr/libx32
+    drwxr-xr-x   2 root root 4096 Apr 15 14:03 media
+    drwxr-xr-x   2 root root 4096 Apr 15 14:03 mnt
+    drwxr-xr-x   2 root root 4096 Apr 15 14:03 opt
+    dr-xr-xr-x 320 root root    0 May  8 12:38 proc
+    drwx------   2 root root 4096 Apr 15 14:10 root
+    drwxr-xr-x   5 root root 4096 Apr 15 14:10 run
+    lrwxrwxrwx   1 root root    8 Apr 15 14:03 sbin -> usr/sbin
+    drwxr-xr-x   2 root root 4096 Apr 15 14:03 srv
+    dr-xr-xr-x  11 root root    0 May  8 12:38 sys
+    drwxrwxrwt   1 root root 4096 May  6 13:32 tmp
+    drwxr-xr-x   1 root root 4096 Apr 15 14:03 usr
+    drwxr-xr-x   1 root root 4096 Apr 15 14:10 var
+    root@fa286a40318a:/# strace -e trace=open,read,write ls /etc
+    bash: strace: command not found
+    root@fa286a40318a:/# apt update && apt install -y strace
+    Hit:1 http://archive.ubuntu.com/ubuntu jammy InRelease
+    Get:2 http://security.ubuntu.com/ubuntu jammy-security InRelease [129 kB]
+    Get:3 http://archive.ubuntu.com/ubuntu jammy-updates InRelease [128 kB]
+    Get:4 http://security.ubuntu.com/ubuntu jammy-security/main amd64 Packages [2901 kB]
+    Get:5 http://archive.ubuntu.com/ubuntu jammy-backports InRelease [127 kB]
+    Get:6 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 Packages [3211 kB]
+    Get:7 http://security.ubuntu.com/ubuntu jammy-security/universe amd64 Packages [1245 kB]
+    Get:8 http://security.ubuntu.com/ubuntu jammy-security/restricted amd64 Packages [4282 kB]
+    Get:9 http://archive.ubuntu.com/ubuntu jammy-updates/universe amd64 Packages [1546 kB]
+    Get:10 http://archive.ubuntu.com/ubuntu jammy-updates/restricted amd64 Packages [4436 kB]
+    Get:11 http://archive.ubuntu.com/ubuntu jammy-backports/main amd64 Packages [83.2 kB]
+    Fetched 18.1 MB in 29s (632 kB/s)
+    Reading package lists... Done
+    Building dependency tree... Done
+    Reading state information... Done
+    All packages are up to date.
+    Reading package lists... Done
+    Building dependency tree... Done
+    Reading state information... Done
+    The following additional packages will be installed:
+      libunwind8
+    The following NEW packages will be installed:
+      libunwind8 strace
+    0 upgraded, 2 newly installed, 0 to remove and 0 not upgraded.
+    Need to get 622 kB of archives.
+    After this operation, 2249 kB of additional disk space will be used.
+    Get:1 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libunwind8 amd64 1.3.2-2build2.1 [54.5 kB]
+    Get:2 http://archive.ubuntu.com/ubuntu jammy/main amd64 strace amd64 5.16-0ubuntu3 [567 kB]
+    Fetched 622 kB in 2s (252 kB/s)
+    debconf: delaying package configuration, since apt-utils is not installed
+    Selecting previously unselected package libunwind8:amd64.
+    (Reading database ... 5152 files and directories currently installed.)
+    Preparing to unpack .../libunwind8_1.3.2-2build2.1_amd64.deb ...
+    Unpacking libunwind8:amd64 (1.3.2-2build2.1) ...
+    Selecting previously unselected package strace.
+    Preparing to unpack .../strace_5.16-0ubuntu3_amd64.deb ...
+    Unpacking strace (5.16-0ubuntu3) ...
+    Setting up libunwind8:amd64 (1.3.2-2build2.1) ...
+    Setting up strace (5.16-0ubuntu3) ...
+    Processing triggers for libc-bin (2.35-0ubuntu3.9) ...
+    root@fa286a40318a:/# strace -e trace=open,read,write ls /etc
+    read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 832) = 832
+    read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0P\237\2\0\0\0\0\0"..., 832) = 832
+    read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 832) = 832
+    read(3, "nodev\tsysfs\nnodev\ttmpfs\nnodev\tbd"..., 1024) = 478
+    read(3, "", 1024)                       = 0
+    write(1, "adduser.conf\t\tdebconf.conf\tgshad"..., 97adduser.conf               debconf.conf    gshadow      ld.so.conf     mke2fs.conf    passwd     rcS.d     subuid
+    ) = 97
+    write(1, "alternatives\t\tdebian_version\tgss"..., 97alternatives               debian_version  gss          ld.so.conf.d   mtab       profile    resolv.conf  sysctl.conf
+    ) = 97
+    write(1, "apt\t\t\tdefault\t\thost.conf    ldap"..., 74apt                      default         host.conf    ldap           nanorc     profile.d  rmt           sysctl.d
+    ) = 74
+    write(1, "bash.bashrc\t\tdeluser.conf\thostna"..., 93bash.bashrc                deluser.conf    hostname     legal          netconfig   rc0.d      security     systemd
+    ) = 93
+    write(1, "bindresvport.blacklist\tdpkg\t\thos"..., 98bindresvport.blacklist     dpkg            hosts        libaudit.conf  networks   rc1.d      selinux       terminfo
+    ) = 98
+    write(1, "ca-certificates\t\te2scrub.conf\tin"..., 105ca-certificates           e2scrub.conf    init.d       logcheck       nsswitch.conf  rc2.d      shadow    update-motd.d
+    ) = 105
+    write(1, "ca-certificates.conf\tenvironment"..., 95ca-certificates.conf environment     issue        login.defs     opt            rc3.d      shells    wgetrc
+    ) = 95
+    write(1, "cloud\t\t\tfstab\t\tissue.net    logr"..., 87cloud                    fstab           issue.net    logrotate.d    os-release          rc4.d      skel         xattr.conf
+    ) = 87
+    write(1, "cron.d\t\t\tgai.conf\tkernel\t     ls"..., 72cron.d                   gai.conf        kernel       lsb-release    pam.conf   rc5.d      ssl
+    ) = 72
+    write(1, "cron.daily\t\tgroup\t\tld.so.cache  "..., 74cron.daily                group           ld.so.cache  machine-id     pam.d      rc6.d      subgid
+    ) = 74
+    +++ exited with 0 +++
+    root@fa286a40318a:/#
