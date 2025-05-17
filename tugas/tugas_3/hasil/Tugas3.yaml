@@ -1,13 +1,15 @@
 praktikum:
-  nama_image: xv6-praktikum
-  sistem_operasi: "Microsoft Windows [Version 10.0.26100.3915]"
-  lokasi_folder: "C:\\Users\\LENOVO\\Downloads\\Sistem Operasi\\os-202402-main\\pertemuan5"
+  os: "Microsoft Windows"
+  version: "10.0.26100.4061"
+  copyright: "(c) Microsoft Corporation. All rights reserved."
+  user: "LENOVO"
+  working_directory: "C:\\Users\\LENOVO\\Downloads\\praktikum3"
 
   perintah:
-    - cd "Downloads\\Sistem Operasi\\os-202402-main\\pertemuan5"
-    - docker build -t xv6-praktikum .
-    - docker run -it --rm xv6-praktikum
-    - ps,fork,exit
+    - cd "C:\\Users\\LENOVO\\Downloads\\praktikum3"
+    - docker build -t xv6 .
+    - docker run -it --rm xv6
+    - make qemu-nox
 
   output_docker_build: |
     - "[+] Building 3.9s (10/10) FINISHED"
