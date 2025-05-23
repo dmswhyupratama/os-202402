@@ -16,7 +16,7 @@
 
 Build Docker image:
 ```bash
-docker build -t xv6_nim .
+docker build -t xv6_240202858 .
 ```
 
 ---
@@ -26,7 +26,7 @@ docker build -t xv6_nim .
 Jalankan lingkungan praktikum di dalam Docker:
 
 ```bash
-docker run -it --rm xv6_nim
+docker run -it --rm xv6_240202858
 ```
 
 ---
