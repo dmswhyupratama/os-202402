@@ -1,87 +1,56 @@
 # 📝 Laporan Tugas Akhir
 
-**Mata Kuliah**: Sistem Operasi
-**Semester**: Genap / Tahun Ajaran 2024–2025
-**Nama**: `<Nama Lengkap>`
-**NIM**: `<Nomor Induk Mahasiswa>`
-**Modul yang Dikerjakan**:
-`(Contoh: Modul 1 – System Call dan Instrumentasi Kernel)`
+Mata Kuliah: Sistem Operasi
+Semester: Genap / Tahun Ajaran 2024–2025
+Nama: Dimas Wahyu Pratama
+NIM: 240202858
+Modul yang Dikerjakan:
+(Modul 2 – Proses dan Manajemen Proses)
 
 ---
 
 ## 📌 Deskripsi Singkat Tugas
 
-Tuliskan deskripsi singkat dari modul yang Anda kerjakan. Misalnya:
-
-* **Modul 1 – System Call dan Instrumentasi Kernel**:
-  Menambahkan dua system call baru, yaitu `getpinfo()` untuk melihat proses yang aktif dan `getReadCount()` untuk menghitung jumlah pemanggilan `read()` sejak boot.
+* **Modul 2 – Proses dan Manajemen Proses:**:
+  Praktikum ini berfokus pada mekanisme pembuatan dan manajemen proses di `xv6`. Salah satu tugas utamanya adalah membuat program yang melakukan forking dan menampilkan urutan eksekusi proses `parent` dan `child`.
 ---
 
 ## 🛠️ Rincian Implementasi
 
-Tuliskan secara ringkas namun jelas apa yang Anda lakukan:
-
-### Contoh untuk Modul 1:
-
-* Menambahkan dua system call baru di file `sysproc.c` dan `syscall.c`
-* Mengedit `user.h`, `usys.S`, dan `syscall.h` untuk mendaftarkan syscall
-* Menambahkan struktur `struct pinfo` di `proc.h`
-* Menambahkan counter `readcount` di kernel
-* Membuat dua program uji: `ptest.c` dan `rtest.c`
+* Membuat program `ptest.c` yang melakukan forking dua proses anak
+* Mengatur urutan eksekusi agar child selesai terlebih dahulu, diikuti parent
+* Menggunakan `fork()` dan `wait()` untuk mengatur sinkronisasi antar proses
+* Menambahkan program ke `Makefile` agar dapat di-compile dalam xv6
 ---
 
 ## ✅ Uji Fungsionalitas
 
-Tuliskan program uji apa saja yang Anda gunakan, misalnya:
-
-* `ptest`: untuk menguji `getpinfo()`
-* `rtest`: untuk menguji `getReadCount()`
-* `cowtest`: untuk menguji fork dengan Copy-on-Write
-* `shmtest`: untuk menguji `shmget()` dan `shmrelease()`
-* `chmodtest`: untuk memastikan file `read-only` tidak bisa ditulis
-* `audit`: untuk melihat isi log system call (jika dijalankan oleh PID 1)
+* Program ptest digunakan untuk menguji keberhasilan proses fork() dan wait()
+* Output dari program menunjukkan bahwa proses child selesai terlebih dahulu, baru kemudian parent
+* Tidak ada error atau panic selama proses eksekusi berlangsung
 
 ---
 
 ## 📷 Hasil Uji
 
-Lampirkan hasil uji berupa screenshot atau output terminal. Contoh:
-
-### 📍 Contoh Output `cowtest`:
+### 📍Output `ptest`:
 
 ```
-Child sees: Y
-Parent sees: X
+Child 2 selesai  
+Child 1 selesai  
+Parent selesai
 ```
-
-### 📍 Contoh Output `shmtest`:
-
-```
-Child reads: A
-Parent reads: B
-```
-
-### 📍 Contoh Output `chmodtest`:
-
-```
-Write blocked as expected
-```
-
 Jika ada screenshot:
 
 ```
-![hasil cowtest](./screenshots/cowtest_output.png)
+![hasil Modul2](.Modul2.png)
 ```
 
 ---
 
 ## ⚠️ Kendala yang Dihadapi
 
-Tuliskan kendala (jika ada), misalnya:
 
-* Salah implementasi `page fault` menyebabkan panic
-* Salah memetakan alamat shared memory ke USERTOP
-* Proses biasa bisa akses audit log (belum ada validasi PID)
 
 ---
 

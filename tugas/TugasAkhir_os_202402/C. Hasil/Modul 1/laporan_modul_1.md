@@ -11,17 +11,11 @@
 
 ## 📌 Deskripsi Singkat Tugas
 
-Tuliskan deskripsi singkat dari modul yang Anda kerjakan. Misalnya:
-
 * **Modul 1 – System Call dan Instrumentasi Kernel**:
   Menambahkan dua system call baru, yaitu `getpinfo()` untuk melihat proses yang aktif dan `getReadCount()` untuk menghitung jumlah pemanggilan `read()` sejak boot.
 ---
 
 ## 🛠️ Rincian Implementasi
-
-Tuliskan secara ringkas namun jelas apa yang Anda lakukan:
-
-### Contoh untuk Modul 1:
 
 * Menambahkan dua system call baru di file `sysproc.c` dan `syscall.c`
 * Mengedit `user.h`, `usys.S`, dan `syscall.h` untuk mendaftarkan syscall
@@ -31,8 +25,6 @@ Tuliskan secara ringkas namun jelas apa yang Anda lakukan:
 ---
 
 ## ✅ Uji Fungsionalitas
-
-Tuliskan program uji apa saja yang Anda gunakan, misalnya:
 
 * `ptest`: untuk menguji `getpinfo()`
 * `rtest`: untuk menguji `getReadCount()`
@@ -45,32 +37,25 @@ Tuliskan program uji apa saja yang Anda gunakan, misalnya:
 
 ## 📷 Hasil Uji
 
-Lampirkan hasil uji berupa screenshot atau output terminal. Contoh:
-
-### 📍 Contoh Output `cowtest`:
+### 📍 Output `ptest `:
 
 ```
-Child sees: Y
-Parent sees: X
+PID    MEM     NAME
+1      12288   init
+2      16384   sh
+3      12288   ptest
 ```
 
-### 📍 Contoh Output `shmtest`:
+### 📍 Output `rtest `:
 
 ```
-Child reads: A
-Parent reads: B
-```
-
-### 📍 Contoh Output `chmodtest`:
-
-```
-Write blocked as expected
+Read Count Sebelum: 13
 ```
 
 Jika ada screenshot:
 
 ```
-![hasil cowtest](./screenshots/cowtest_output.png)
+![hasil Modul1](.Modul1.png)
 ```
 
 ---
@@ -79,9 +64,6 @@ Jika ada screenshot:
 
 Tuliskan kendala (jika ada), misalnya:
 
-* Salah implementasi `page fault` menyebabkan panic
-* Salah memetakan alamat shared memory ke USERTOP
-* Proses biasa bisa akses audit log (belum ada validasi PID)
 
 ---
 
