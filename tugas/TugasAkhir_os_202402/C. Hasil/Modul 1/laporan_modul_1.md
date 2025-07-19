@@ -54,7 +54,7 @@ Read Count Sebelum: 13
 screenshot:
 
 ```
-![Output Modul 1](https://github.com/dmswhyupratama/os-202402/blob/b3a77485f9dc0274d965e68a966e14f126360c34/tugas/TugasAkhir_os_202402/C.%20Hasil/Modul%201/Modul1.png)
+![image alt](https://github.com/dmswhyupratama/os-202402/blob/b3a77485f9dc0274d965e68a966e14f126360c34/tugas/TugasAkhir_os_202402/C.%20Hasil/Modul%201/Modul1.png)
 
 ```
 
