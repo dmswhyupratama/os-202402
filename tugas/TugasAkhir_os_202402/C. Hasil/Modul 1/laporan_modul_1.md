@@ -55,7 +55,7 @@ Jika ada screenshot:
 
 ```
 =======
-![Output Modul 2](../Screenshots/Modul2.png)
+![Output Modul 1](../Screenshots/Modul1.png)
 
 ```
 
