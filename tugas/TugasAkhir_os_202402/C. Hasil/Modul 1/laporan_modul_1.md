@@ -55,7 +55,7 @@ screenshot:
 
 ```
 =======
-![Output Modul 1](Modul1.png)
+![Output Modul 1](./Modul1.png)
 
 ```
 
