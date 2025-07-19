@@ -4,8 +4,7 @@
 **Semester**: Genap / Tahun Ajaran 2024–2025
 **Nama**: `Dimas Wahyu Pratama`
 **NIM**: `240202858`
-**Modul yang Dikerjakan**:
-`Modul 1 – System Call dan Instrumentasi Kernel`
+**Modul yang Dikerjakan**: `Modul 1 – System Call dan Instrumentasi Kernel`
 
 ---
 
@@ -55,25 +54,15 @@ Read Count Sebelum: 13
 Jika ada screenshot:
 
 ```
-<<<<<<< HEAD
-<img width="808" height="412" alt="Cuplikan layar 2025-07-18 123147" src="https://github.com/user-attachments/assets/45efa7c3-cce9-4865-9656-9b7664c37512" />
-
 =======
-![hasil Modul1](.Modul1.png)
->>>>>>> ab05137 (Update Laporan Tugas Akhir)
+![Output Modul 2](../Screenshots/Modul2.png)
+
 ```
 
 ---
 
 ## ⚠️ Kendala yang Dihadapi
 
-Tuliskan kendala (jika ada), misalnya:
-
-<<<<<<< HEAD
--Tidak ada kendala Yang dialami
-=======
-
->>>>>>> ab05137 (Update Laporan Tugas Akhir)
 ---
 
 ## 📚 Referensi
