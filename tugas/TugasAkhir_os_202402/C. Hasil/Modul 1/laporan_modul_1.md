@@ -51,11 +51,11 @@ PID    MEM     NAME
 Read Count Sebelum: 13
 ```
 
-Jika ada screenshot:
+screenshot:
 
 ```
 =======
-![Output Modul 1](../Screenshots/Modul1.png)
+![Output Modul 1](Modul1.png)
 
 ```
 

@@ -40,10 +40,10 @@ Child 2 selesai
 Child 1 selesai  
 Parent selesai
 ```
-Jika ada screenshot:
+screenshot:
 
 ```
-![Output Modul 2 - Fork Test](../images/Modul2.png)
+![Output Modul 2](Modul2.png)
 ```
 
 ---
