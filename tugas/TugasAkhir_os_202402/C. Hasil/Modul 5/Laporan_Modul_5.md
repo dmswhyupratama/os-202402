@@ -3,10 +3,9 @@
 
 **Mata Kuliah**: Sistem Operasi  
 **Semester**: Genap / Tahun Ajaran 2024–2025  
-**Nama**: `Dimas Wahyu Pratama`  
-**NIM**: `240202858`  
-**Modul yang Dikerjakan**:  
-`Modul 5: Audit dan Keamanan Sistem`
+**Nama**: Dimas Wahyu Pratama  
+**NIM**: 240202858  
+**Modul yang Dikerjakan**:  Modul 5: Audit dan Keamanan Sistem
 
 ---
 
@@ -38,7 +37,7 @@ Modul ini bertujuan untuk menambahkan fungsionalitas **audit log** pada sistem o
 
 ### 🔹 1. Tambahkan Struktur Audit Log Sesuai Modul:
 
-  Modul menyarankan penambahan struktur dan variabel global di syscall.c:
+Modul menyarankan penambahan struktur dan variabel global di syscall.c:
 
 ```c
 // syscall.c
@@ -52,14 +51,13 @@ struct audit_entry {
 
 struct audit_entry audit_log[MAX_AUDIT];
 int audit_index = 0;
----
+```
 
-  Permasalahan & Solusi (Error: 'struct audit_entry' has no member named 'p', 'proc' undeclared, redefinition of 'struct audit_entry'):
+Permasalahan & Solusi (Error: 'struct audit_entry' has no member named 'p', 'proc' undeclared, redefinition of 'struct audit_entry'):
+Awalnya, penempatan ini menyebabkan error karena definisi struct audit_entry dan MAX_AUDIT tidak dikenali secara global oleh semua file yang membutuhkannya, seperti sysproc.c. Selain itu, duplikasi definisi struct audit_entry di user.h dan audit.c juga memicu error redefinition.
 
-  Awalnya, penempatan ini menyebabkan error karena definisi struct audit_entry dan MAX_AUDIT tidak dikenali secara global oleh semua file yang membutuhkannya, seperti sysproc.c. Selain itu, duplikasi definisi struct audit_entry di user.h dan audit.c juga memicu error redefinition.
-
-  Perbaikan:
-  Untuk mengatasi masalah ini, definisi struct audit_entry dan MAX_AUDIT dipindahkan ke kernel/defs.h agar dapat diakses secara global, dan deklarasi extern untuk audit_log dan audit_index ditambahkan di sana. Definisi duplikat di user.h dan audit.c kemudian dihapus.  
+Perbaikan:
+Untuk mengatasi masalah ini, definisi struct audit_entry dan MAX_AUDIT dipindahkan ke kernel/defs.h agar dapat diakses secara global, dan deklarasi extern untuk audit_log dan audit_index ditambahkan di sana. Definisi duplikat di user.h dan audit.c kemudian dihapus.  
 ---
 
 ### Kode Final di kernel/defs.h: 
@@ -87,13 +85,11 @@ extern uint ticks;
 // Pastikan prototipe fungsi-fungsi penting ini juga ada:
 struct proc* myproc(void); // Untuk mendapatkan proses saat ini
 void syscall(void);        // Prototipe fungsi syscall
-
----
+```
 
 #### 🔹 2. Catat System Call di syscall()
 
-  Modul menyarankan penambahan kode log di fungsi syscall() (syscall.c):
-
+Modul menyarankan penambahan kode log di fungsi syscall() (syscall.c):
 ```c
 // syscall.c
 // ... setelah num = proc->tf->eax;
@@ -106,15 +102,13 @@ if (num > 0 && num < NELEM(syscalls) && syscalls[num]) {
   }
 }
 ```
-  Permasalahan & Solusi (Error: 'struct proc' has no member named 'p', 'proc' undeclared):
+Permasalahan & Solusi (Error: 'struct proc' has no member named 'p', 'proc' undeclared):
+Awalnya, kode ini mengasumsikan proc->tf->eax dan proc->pid yang tidak benar untuk xv6.
 
-  Awalnya, kode ini mengasumsikan proc->tf->eax dan proc->pid yang tidak benar untuk xv6.
-
-  Perbaikan:
-  Kami mengubah proc->tf->eax menjadi curproc->tf->eax untuk mendapatkan nomor syscall dari trapframe proses saat ini. Variabel proc->pid juga diganti dengan curproc->pid setelah mendapatkan curproc melalui myproc(). Logika if ganda juga digabungkan untuk efisiensi.
+Perbaikan:
+saya mengubah proc->tf->eax menjadi curproc->tf->eax untuk mendapatkan nomor syscall dari trapframe proses saat ini. Variabel proc->pid juga diganti dengan curproc->pid setelah mendapatkan curproc melalui myproc(). Logika if ganda juga digabungkan untuk efisiensi.
 ---
 #### Kode Final di syscall.c:
-
 ```c
 #include "types.h"
 #include "defs.h" // Penting untuk MAX_AUDIT dan struct audit_entry
@@ -160,23 +154,22 @@ syscall(void)
     curproc->tf->eax = -1;
   }
 }
----
+```
 
 ### 🔹 3. Tambahkan System Call `get_audit_log()`
 
-  Langkah ini melibatkan penambahan SYS_get_audit_log di syscall.h, deklarasi di user.h, registrasi di usys.S, dan implementasi di sysproc.c.
+Langkah ini melibatkan penambahan SYS_get_audit_log di syscall.h, deklarasi di user.h, registrasi di usys.S, dan implementasi di sysproc.c.
 
 #### a. syscall.h – Tambahkan nomor syscall baru:
 Sesuai Modul:
 ```c
 #define SYS_get_audit_log 28
 ```
-  Permasalahan & Solusi (Error: SYS_get_audit_log redefined):
+Permasalahan & Solusi (Error: SYS_get_audit_log redefined):
+Error muncul jika ada definisi ganda SYS_get_audit_log.
 
-  Error muncul jika ada definisi ganda SYS_get_audit_log.
-
-  Perbaikan:
-  Pastikan hanya ada satu definisi SYS_get_audit_log di syscall.h.
+Perbaikan:
+Pastikan hanya ada satu definisi SYS_get_audit_log di syscall.h.
 ---
 
 #### b. user.h – Tambahkan deklarasi:
@@ -190,21 +183,19 @@ struct audit_entry { // Ini akan dihapus
 };
 int get_audit_log(void *buf, int max);
 ```
-  Permasalahan & Solusi (Error: redefinition of 'struct audit_entry'):
+Permasalahan & Solusi (Error: redefinition of 'struct audit_entry'):
+Sama seperti masalah sebelumnya, mendefinisikan ulang struct audit_entry di user.h menyebabkan konflik jika sudah didefinisikan di defs.h.
 
-  Sama seperti masalah sebelumnya, mendefinisikan ulang struct audit_entry di user.h menyebabkan konflik jika sudah didefinisikan di defs.h.
-
-  Perbaikan:
-  Hanya deklarasikan fungsi get_audit_log. Hapus definisi struct audit_entry dari user.h karena sudah ada di defs.h (dan user.h akan menyertakan defs.h atau file lain yang pada gilirannya menyertakan defs.h).
+Perbaikan:
+Hanya deklarasikan fungsi get_audit_log. Hapus definisi struct audit_entry dari user.h karena sudah ada di defs.h (dan user.h akan menyertakan defs.h atau file lain yang pada gilirannya menyertakan defs.h).
 ---
 
 #### c. usys.S – Tambahkan syscall:
-
 ```c
 // usys.S
 SYSCALL(get_audit_log)
 ```
-  Ini tidak menimbulkan masalah dan tetap digunakan.
+Ini tidak menimbulkan masalah dan tetap digunakan.
 ---
 
 #### d. `sysproc.c` – Implementasi syscall:
@@ -230,19 +221,15 @@ int sys_get_audit_log(void) {
   return n;
 }
 ```
-  Permasalahan & Solusi (Error: 'proc' undeclared, control reaches end of non-void function, unused variable 'curproc'):
+Permasalahan & Solusi (Error: 'proc' undeclared, control reaches end of non-void function, unused variable 'curproc'):
 
-  Kode ini awalnya memiliki beberapa masalah: penggunaan proc yang tidak dideklarasikan, operator perbandingan <> yang salah, dan variabel curproc yang menjadi tidak terpakai setelah pembatasan PID dikomentari.
+Kode ini awalnya memiliki beberapa masalah: penggunaan proc yang tidak dideklarasikan, operator perbandingan <> yang salah, dan variabel curproc yang menjadi tidak terpakai setelah pembatasan PID dikomentari.
 
-  Perbaikan:
-
-  Operator <> diganti dengan !=.
-
-  Penggunaan proc diganti dengan variabel curproc yang diperoleh dari myproc().
-
-  Baris pemeriksaan if (curproc->pid != 1) dikomentari untuk tujuan pengujian agar log bisa diakses dari shell.
-
-  Setelah mengomentari baris tersebut, deklarasi struct proc *curproc = myproc(); dihapus karena curproc tidak lagi digunakan, mengatasi error unused variable.
+Perbaikan:
+* Operator <> diganti dengan !=.
+* Penggunaan proc diganti dengan variabel curproc yang diperoleh dari myproc().
+* Baris pemeriksaan if (curproc->pid != 1) dikomentari untuk tujuan pengujian agar log bisa diakses dari shell.
+* Setelah mengomentari baris tersebut, deklarasi struct proc *curproc = myproc(); dihapus karena curproc tidak lagi digunakan, mengatasi error unused variable.
 
 ---
 
