@@ -9,140 +9,89 @@
 
 ---
 
-## 🎯 Tujuan
+## 📌 Deskripsi Singkat Tugas
 
-Modul ini bertujuan untuk menambahkan fungsionalitas **audit log** pada sistem operasi xv6, yang meliputi:
-
-- Merekam setiap system call yang dijalankan.
-- Menyediakan syscall `get_audit_log(char *buf, int max)` untuk membaca log.
-- Melindungi akses log dari proses biasa (khusus proses PID 1).
+Modul 5 – Audit dan Keamanan Sistem:
+Modul ini bertujuan untuk menambahkan fungsionalitas audit log pada sistem operasi xv6, yang meliputi perekaman setiap system call yang dijalankan, penyediaan system call get_audit_log(char *buf, int max) untuk membaca log, dan perlindungan akses log dari proses biasa (khusus proses PID 1).
 
 ---
 
-## 🗂️ File yang Diubah
+## 🛠️ Rincian Implementasi
+Berikut adalah rincian langkah-langkah implementasi yang dilakukan untuk menyelesaikan Modul 5:
 
-| File        | Perubahan                                                                 |
-|-------------|---------------------------------------------------------------------------|
-| `syscall.c` | Tambahkan pencatatan log setiap syscall                                   |
-| `sysproc.c` | Implementasi syscall `get_audit_log()`                                    |
-| `defs.h`    | Tambahkan deklarasi global untuk struktur dan variabel audit log          |
-| `user.h`    | Tambahkan deklarasi syscall user-level                                    |
-| `usys.S`    | Registrasi syscall                                                        |
-| `syscall.h` | Penambahan nomor syscall baru                                             |
-| `Makefile`  | Tambahkan program uji `audit.c`                                           |
+* Menambahkan Struktur Audit Log:
+    * Mendefinisikan struct audit_entry dan MAX_AUDIT di defs.h untuk konsistensi di seluruh kernel.
+    * Mendeklarasikan variabel global audit_log (array struct audit_entry) dan audit_index (integer) di syscall.c untuk menyimpan dan mengelola log.
+* Pencatatan System Call:
+    * Memodifikasi fungsi syscall() di syscall.c untuk mencatat setiap system call yang valid. Informasi yang dicatat meliputi PID proses pemanggil, nomor system call, dan waktu (tick) saat system call dijalankan. Pencatatan dilakukan hanya jika audit log belum penuh.
+* Menambahkan System Call get_audit_log():
+    * Mendaftarkan system call SYS_get_audit_log (nomor 23) di syscall.h, user.h, usys.S, dan syscall.c.
+    * Mengimplementasikan fungsi sys_get_audit_log() di sysproc.c. Fungsi ini bertanggung jawab untuk menyalin data audit log dari kernel space ke buffer user-space yang disediakan.
+    * Mengimplementasikan mekanisme keamanan di sys_get_audit_log() yang membatasi akses audit log hanya untuk proses dengan PID 1 (init).
+* Program Uji audit.c:
+    * Membuat program user-level audit.c untuk memanggil get_audit_log() dan menampilkan isinya.
+    * Memastikan struct audit_entry didefinisikan di user.h agar program user-level dapat menggunakannya
+* Integrasi ke Makefile:
+    * Menambahkan _audit ke daftar UPROGS di Makefile agar program uji dapat dikompilasi dan dijalankan
+---
+
+## Uji Fungsionalitas :
+Program uji audit.c digunakan untuk memverifikasi fungsionalitas pencatatan system call dan mekanisme keamanan akses audit log. Program ini memanggil system call get_audit_log() dan mencoba menampilkan isinya. Pengujian dilakukan dalam dua skenario: sebagai proses biasa (PID > 1) untuk menguji penolakan akses, dan sebagai proses PID 1 (init) untuk menguji keberhasilan pembacaan log.
 
 ---
 
-## 🧩 Step-by-Step Implementasi
+## 💻 Implementasi Kode Lengkap (Bagian yang Dimodifikasi) :
+Berikut adalah ringkasan perubahan kode pada setiap file, beserta penjelasan singkat mengenai perbaikan yang dilakukan:
 
-### 🔹 1. Tambahkan Struktur Audit Log Sesuai Modul:
-
-Modul menyarankan penambahan struktur dan variabel global di syscall.c:
-
+defs.h
 ```c
-// syscall.c
-#define MAX_AUDIT 128
+// ... deklarasi struct lainnya ...
 
-struct audit_entry {
-  int pid;
-  int syscall_num;
-  int tick;
-};
-
-struct audit_entry audit_log[MAX_AUDIT];
-int audit_index = 0;
-```
-
-Permasalahan & Solusi (Error: 'struct audit_entry' has no member named 'p', 'proc' undeclared, redefinition of 'struct audit_entry'):
-Awalnya, penempatan ini menyebabkan error karena definisi struct audit_entry dan MAX_AUDIT tidak dikenali secara global oleh semua file yang membutuhkannya, seperti sysproc.c. Selain itu, duplikasi definisi struct audit_entry di user.h dan audit.c juga memicu error redefinition.
-
-Perbaikan:
-Untuk mengatasi masalah ini, definisi struct audit_entry dan MAX_AUDIT dipindahkan ke kernel/defs.h agar dapat diakses secara global, dan deklarasi extern untuk audit_log dan audit_index ditambahkan di sana. Definisi duplikat di user.h dan audit.c kemudian dihapus.  
----
-
-### Kode Final di kernel/defs.h: 
-
-```c
-// kernel/defs.h
-
-// Definisi struktur audit_entry
 struct audit_entry {
   int pid;
   int syscall_num;
   uint tick;
 };
 
-// Definisi konstanta
-#define MAX_AUDIT 100 // Angka ini bisa disesuaikan
+#define MAX_AUDIT 128
 
-// Deklarasi extern (variabel global yang didefinisikan di file lain)
 extern struct audit_entry audit_log[MAX_AUDIT];
 extern int audit_index;
 
-// Tambahkan juga deklarasi untuk 'ticks' jika belum ada
 extern uint ticks;
 
-// Pastikan prototipe fungsi-fungsi penting ini juga ada:
-struct proc* myproc(void); // Untuk mendapatkan proses saat ini
-void syscall(void);        // Prototipe fungsi syscall
+// ... deklarasi fungsi kernel lainnya ...
 ```
+Perbaikan: Struktur audit_entry dan MAX_AUDIT dipindahkan ke defs.h untuk menghindari redefinition errors dan memastikan konsistensi definisi di seluruh kernel. Deklarasi extern juga ditambahkan di sini.
 
-#### 🔹 2. Catat System Call di syscall()
-
-Modul menyarankan penambahan kode log di fungsi syscall() (syscall.c):
+syscall.c
 ```c
-// syscall.c
-// ... setelah num = proc->tf->eax;
-if (num > 0 && num < NELEM(syscalls) && syscalls[num]) {
-  if (audit_index < MAX_AUDIT) {
-    audit_log[audit_index].pid = proc->pid; // Perlu perbaikan
-    audit_log[audit_index].syscall_num = num;
-    audit_log[audit_index].tick = ticks;
-    audit_index++;
-  }
-}
-```
-Permasalahan & Solusi (Error: 'struct proc' has no member named 'p', 'proc' undeclared):
-Awalnya, kode ini mengasumsikan proc->tf->eax dan proc->pid yang tidak benar untuk xv6.
+#include "defs.h" // Include defs.h untuk definisi audit_entry dan MAX_AUDIT
+// ... include lainnya ...
 
-Perbaikan:
-saya mengubah proc->tf->eax menjadi curproc->tf->eax untuk mendapatkan nomor syscall dari trapframe proses saat ini. Variabel proc->pid juga diganti dengan curproc->pid setelah mendapatkan curproc melalui myproc(). Logika if ganda juga digabungkan untuk efisiensi.
----
-#### Kode Final di syscall.c:
-```c
-#include "types.h"
-#include "defs.h" // Penting untuk MAX_AUDIT dan struct audit_entry
-#include "param.h"
-#include "memlayout.h"
-#include "mmu.h"
-#include "proc.h"
-#include "x86.h"
-#include "syscall.h"
-
-// DEFINISI dan inisialisasi array audit_log dan audit_index
 struct audit_entry audit_log[MAX_AUDIT];
-int audit_index = 0; // Inisialisasi index ke 0
+int audit_index = 0;
 
-// ... (Deklarasi extern fungsi syscall lainnya)
-extern int sys_get_audit_log(void); // Deklarasi syscall baru
+// ... fungsi fetchint, fetchstr, argint, argptr, argstr ...
+
+extern int sys_get_audit_log(void); // Deklarasi system call baru
 
 static int (*syscalls[])(void) = {
-// ... (daftar syscall lainnya)
-[SYS_get_audit_log] sys_get_audit_log, // Tambahkan fungsi Anda di sini
+// ... system call yang sudah ada ...
+[SYS_get_audit_log] sys_get_audit_log, // Registrasi system call baru
 };
 
 void
 syscall(void)
 {
   int num;
-  struct proc *curproc = myproc(); // Mengambil proses saat ini
+  struct proc *curproc = myproc();
 
-  num = curproc->tf->eax; // Ambil nomor syscall dari trapframe
+  num = curproc->tf->eax;
 
   if (num > 0 && num < NELEM(syscalls) && syscalls[num]) {
-    // Log audit hanya jika ada ruang dan syscall valid
     if (audit_index < MAX_AUDIT) {
-      audit_log[audit_index].pid = curproc->pid; // Gunakan curproc
+      audit_log[audit_index].pid = curproc->pid;
       audit_log[audit_index].syscall_num = num;
       audit_log[audit_index].tick = ticks;
       audit_index++;
@@ -155,104 +104,85 @@ syscall(void)
   }
 }
 ```
+Perbaikan: Variabel audit_log dan audit_index diinisialisasi secara global di syscall.c. Penggunaan curproc->tf->eax dan curproc->pid diperbaiki untuk mengakses informasi proses saat ini dengan benar.    
 
-### 🔹 3. Tambahkan System Call `get_audit_log()`
-
-Langkah ini melibatkan penambahan SYS_get_audit_log di syscall.h, deklarasi di user.h, registrasi di usys.S, dan implementasi di sysproc.c.
-
-#### a. syscall.h – Tambahkan nomor syscall baru:
-Sesuai Modul:
+syscall.h
 ```c
-#define SYS_get_audit_log 28
+// ... nomor system call yang sudah ada ...
+#define SYS_get_audit_log 23 // Pastikan nomor ini unik dan berurutan
 ```
-Permasalahan & Solusi (Error: SYS_get_audit_log redefined):
-Error muncul jika ada definisi ganda SYS_get_audit_log.
 
-Perbaikan:
-Pastikan hanya ada satu definisi SYS_get_audit_log di syscall.h.
----
-
-#### b. user.h – Tambahkan deklarasi:
-Sesuai Modul:
+user.h
 ```c
-// user.h
-struct audit_entry { // Ini akan dihapus
+// ... deklarasi system call lainnya ...
+
+struct audit_entry {
   int pid;
   int syscall_num;
   int tick;
 };
+
 int get_audit_log(void *buf, int max);
 ```
-Permasalahan & Solusi (Error: redefinition of 'struct audit_entry'):
-Sama seperti masalah sebelumnya, mendefinisikan ulang struct audit_entry di user.h menyebabkan konflik jika sudah didefinisikan di defs.h.
+Perbaikan: Struktur audit_entry didefinisikan secara eksplisit di user.h agar program user-level dapat menggunakannya tanpa masalah redefinition atau undefined type.
 
-Perbaikan:
-Hanya deklarasikan fungsi get_audit_log. Hapus definisi struct audit_entry dari user.h karena sudah ada di defs.h (dan user.h akan menyertakan defs.h atau file lain yang pada gilirannya menyertakan defs.h).
----
-
-#### c. usys.S – Tambahkan syscall:
+usys.S
 ```c
-// usys.S
-SYSCALL(get_audit_log)
+// ... SYSCALL makro yang sudah ada ...
+SYSCALL(get_audit_log) // Tambahkan entri ini
 ```
-Ini tidak menimbulkan masalah dan tetap digunakan.
----
 
-#### d. `sysproc.c` – Implementasi syscall:
-
+sysproc.c
 ```c
-// sysproc.c
+#include "defs.h" // Include defs.h untuk struct audit_entry, MAX_AUDIT, ticks
+// ... include lainnya ...
+
 extern struct audit_entry audit_log[];
 extern int audit_index;
+
+extern struct spinlock tickslock;
+extern uint ticks;
 
 int sys_get_audit_log(void) {
   char *buf;
   int max;
 
-  if (argptr(0, &buf, sizeof(struct audit_entry) * MAX_AUDIT) < 0 || argint(1, &max) < 0) // Perlu perbaikan
+  if (argptr(0, &buf, sizeof(struct audit_entry) * MAX_AUDIT) < 0 || argint(1, &max) < 0) {
     return -1;
+  }
 
-  if (proc->pid != 1) // Perlu perbaikan
-    return -1; // hanya PID 1 (init) yang boleh akses audit log
+  struct proc *curproc = myproc();
 
-  int n = (audit_index < max) ? audit_index : max;
-  memmove(buf, audit_log, n * sizeof(struct audit_entry));
+  // --- OPSI FITUR KEAMANAN ---
+  // Aktifkan blok ini untuk mengaktifkan keamanan (Hanya PID 1 yang boleh akses)
+  if (curproc->pid != 1) {
+    return -1;
+  }
 
-  return n;
+  int n_to_copy = (audit_index < max) ? audit_index : max;
+  
+  memmove(buf, audit_log, n_to_copy * sizeof(struct audit_entry));
+
+  return n_to_copy;
 }
+
+// ... sisa kode sysproc.c ...
 ```
-Permasalahan & Solusi (Error: 'proc' undeclared, control reaches end of non-void function, unused variable 'curproc'):
+Perbaikan: Penggunaan curproc (dari myproc()) menggantikan proc yang tidak dideklarasikan. Operator perbandingan != digunakan dengan benar. Opsi fitur keamanan dijelaskan dengan jelas.
 
-Kode ini awalnya memiliki beberapa masalah: penggunaan proc yang tidak dideklarasikan, operator perbandingan <> yang salah, dan variabel curproc yang menjadi tidak terpakai setelah pembatasan PID dikomentari.
-
-Perbaikan:
-* Operator <> diganti dengan !=.
-* Penggunaan proc diganti dengan variabel curproc yang diperoleh dari myproc().
-* Baris pemeriksaan if (curproc->pid != 1) dikomentari untuk tujuan pengujian agar log bisa diakses dari shell.
-* Setelah mengomentari baris tersebut, deklarasi struct proc *curproc = myproc(); dihapus karena curproc tidak lagi digunakan, mengatasi error unused variable.
-
----
-
-## 🧪 Program Uji: `audit.c`
-
+audit.c (Program Uji)
 ```c
 // audit.c
 #include "types.h"
 #include "stat.h"
-#include "user.h"
-
-struct audit_entry { // Ini akan dihapus
-  int pid;
-  int syscall_num;
-  int tick;
-};
+#include "user.h" // Include user.h untuk definisi struct audit_entry
 
 int main() {
   struct audit_entry buf[128];
   int n = get_audit_log((void*)buf, 128);
 
   if (n < 0) {
-    printf(1, "Access denied or error.\n");
+    printf(1, "Access denied or error. (Only PID 1 can read audit log)\n");
     exit();
   }
 
@@ -264,47 +194,44 @@ int main() {
 
   exit();
 }
-
 ```
-
-  Permasalahan & Solusi (Error: redefinition of 'struct audit_entry'):
-
-  Definisi ganda struct audit_entry di audit.c menyebabkan konflik.
-
-  Perbaikan:
-  Definisi struct audit_entry dihapus dari audit.c karena sudah disertakan melalui user.h (yang pada akhirnya mendapatkan definisinya dari defs.h).
----
-
-## 📦 Tambahkan ke Makefile
-
-```make
-UPROGS=\
-  _cat\
-  _audit\
-  ...
-```
+Perbaikan: Definisi struct audit_entry dihapus dari audit.c karena sudah disertakan melalui user.h, menghindari redefinition error.
 
 ---
 
-## 🔁 Build & Jalankan
-
-```bash
-$ make clean
-$ make qemu-nox
+# 📷 Hasil Uji
+## Jika Fitur Keamanan AKTIF (Hanya PID 1 yang boleh akses)Konfigurasi (sysproc.c):
+```c
+// ... dalam sys_get_audit_log
+  struct proc *curproc = myproc();
+  if (curproc->pid != 1) {
+    return -1; // Akses ditolak jika bukan PID 1
+  }
+// ...
 ```
+## 📍 Output audit (Jika Fitur Keamanan AKTIF - Hanya PID 1 yang boleh akses):
 
-### Output Awal (Sebelum akses diperbolehkan):
-```bash
+```
 $ audit
-Access denied or error.
+Access denied or error. (Only PID 1 can read audit log)
 ```
-  Penjelasan: Output ini terjadi karena implementasi sys_get_audit_log awalnya membatasi akses hanya untuk proses dengan PID 1. Proses shell yang menjalankan audit memiliki PID yang berbeda.
+* Penjelasan:
+Ketika audit dijalankan dari shell (yang memiliki PID > 1), fungsi sys_get_audit_log akan mendeteksi bahwa PID pemanggil bukan 1. Sesuai dengan logika keamanan yang diaktifkan, syscall akan mengembalikan -1, yang kemudian diterjemahkan oleh program audit.c sebagai "Access denied or error.". Ini menunjukkan bahwa kebijakan keamanan berhasil diterapkan.
 
-  Output Diharapkan (Setelah Perbaikan dan Pengujian):
-  Setelah mengomentari atau menghapus pemeriksaan if (curproc->pid != 1) di sysproc.c, audit dapat dijalankan dari shell biasa dan akan menampilkan log audit yang telah dikumpulkan:
-
-### Output Setelah Modifikasi:
-```bash
+## Jika Fitur Keamanan NONAKTIF (Semua PID boleh akses) Konfigurasi (sysproc).c:
+```c
+// ... dalam sys_get_audit_log
+// (jika blok code ini dihilangkan, atau dikomentari maka output dibawah akan terjadi)
+/*
+  struct proc *curproc = myproc();
+  if (curproc->pid != 1) {
+    return -1;
+  }
+*/
+// ...
+```
+## 📍 Output audit (Jika Fitur Keamanan Nonaktif - Semua PID boleh akses):
+```
 === Audit Log ===
 [0] PID=1 SYSCALL=7 TICK=2
 [1] PID=1 SYSCALL=15 TICK=2
@@ -315,19 +242,33 @@ Access denied or error.
 [42] PID=3 SYSCALL=28 TICK=1930
 $
 ```
+* Penjelasan:
+Dengan pemeriksaan PID dinonaktifkan, sys_get_audit_log akan selalu mengembalikan jumlah entri log yang tersedia. Program audit.c kemudian berhasil membaca log tersebut dan mencetaknya ke layar, menunjukkan detail PID, nomor syscall, dan waktu (tick) untuk setiap system call yang terekam sejak boot.
+
 ---
 
-## 🔐 Ringkasan Fitur Keamanan
-
-| Fitur            | Deskripsi                                                        |
-|------------------|------------------------------------------------------------------|
-| Log System Call  | Semua syscall direkam: PID, nomor syscall, dan waktu (tick)      |
-| Akses Terbatas   | Hanya PID 1 (init) yang boleh akses log (sesuai spesifikasi)     |
-| Isolasi Kernel   | Data log berada di kernel space, tidak langsung diakses user     |
+## ⚠️ Kendala yang Dihadapi
+* Selama proses implementasi awal modul ini, beberapa kendala dan error umum dihadapi, yang kemudian berhasil diatasi:
+    * Permasalahan: Penempatan awal definisi struct audit_entry, MAX_AUDIT, audit_log, dan audit_index di syscall.c menyebabkan error seperti 'struct audit_entry' has no member named 'p', 'proc' undeclared, dan redefinition errors ketika diakses dari file kernel lain (misalnya sysproc.c) atau ketika struct audit_entry juga didefinisikan di user.h.
+    * Solusi: Definisi struct audit_entry dan MAX_AUDIT dipindahkan ke defs.h (file header kernel) untuk memastikan konsistensi definisi di seluruh kernel. Deklarasi extern untuk audit_log dan audit_index ditambahkan di defs.h, sementara inisialisasi aktualnya tetap di syscall.c. Untuk user-space, definisi struct audit_entry yang identik ditambahkan di user.h.
+* Akses Variabel Proses yang Tidak Tepat:
+    * Permasalahan: Dalam fungsi syscall() di syscall.c dan sys_get_audit_log() di sysproc.c, terdapat masalah dalam mengakses variabel proses seperti proc->tf->eax dan proc->pid karena proc tidak dideklarasikan secara langsung di scope tersebut.
+    * Solusi: Penggunaan proc->tf->eax diganti dengan curproc->tf->eax, dan proc->pid diganti dengan curproc->pid setelah mendapatkan curproc melalui myproc(), yang mengembalikan pointer ke proses saat ini.
+* Kesalahan Operator Perbandingan:
+    * Permasalahan: Dalam system call sys_get_audit_log(), operator perbandingan <> digunakan yang tidak valid dalam C.
+    * Solusi: Operator <> diganti dengan != untuk perbandingan yang benar.
+* Duplikasi Definisi struct audit_entry di User-Space:
+    * Permasalahan: Program audit.c awalnya mendefinisikan struct audit_entry secara lokal, yang menyebabkan redefinition error jika user.h juga mendefinisikannya.
+    * Solusi: Definisi struct audit_entry dihapus dari audit.c dan dipastikan hanya ada satu definisi di user.h yang kemudian di-include oleh audit.c.
+* Pengujian Fitur Keamanan:
+    * Permasalahan: Untuk menguji kebijakan keamanan (hanya PID 1 yang boleh akses), diperlukan cara yang tepat untuk menjalankan audit.c sebagai PID 1.
+    * Solusi: Modifikasi init.c untuk menjalankan exec("audit", argv); sebagai pengganti shell default (sh) memungkinkan audit.c berjalan sebagai proses PID 1, sehingga dapat mengakses audit log.
+  Kendala-kendala ini berhasil diatasi dengan pendekatan debugging yang sistematis dan pemahaman yang lebih baik tentang struktur kernel xv6 serta interaksi antara kernel dan user-space.
 
 ---
 
 ## 📚 Referensi
 
-- *xv6 Book* – Chapter 3: System Calls  
-- File sumber: `syscall.c`, `proc.c`, `defs.h`, `sysproc.c`, `user.h`, `usys.S`
+* Buku xv6 MIT: https://pdos.csail.mit.edu/6.828/2018/xv6/book-rev11.pdf
+* Repositori xv6-public: https://github.com/mit-pdos/xv6-public
+* Stack Overflow, GitHub Issues, diskusi praktikum

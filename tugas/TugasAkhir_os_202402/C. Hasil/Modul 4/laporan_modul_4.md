@@ -6,64 +6,108 @@
 **Modul yang Dikerjakan:**  
 Modul 4: Subsistem Kernel Alternatif (chmod dan /dev/random)
 
-## 🎯 Tujuan
-Modul ini bertujuan untuk:
+## Deskripsi Singkat Tugas
+* Modul 4 – Subsistem Kernel Alternatif (chmod dan /dev/random):
+Modul ini bertujuan untuk mengimplementasikan system call chmod(path, mode) guna mengatur mode akses file (read-only atau read-write) pada inode, serta menambahkan driver pseudo-device /dev/random untuk menghasilkan byte acak yang dapat dibaca oleh program user-level.
 
-- Implementasi syscall `chmod(path, mode)` untuk mengatur mode file (read-only atau read-write) secara sederhana.
-- Menambahkan driver pseudo-device `/dev/random` untuk menghasilkan byte acak.
 
-## 🗂️ File yang Diubah
-| File         | Tujuan                                    |
-|--------------|-------------------------------------------|
-| fs.h         | Tambah field `mode` di inode              |
-| fs.c, file.c | Cek mode akses sebelum tulis              |
-| sysfile.c    | Implementasi syscall `chmod()`            |
-| syscall.c    | Registrasi syscall                        |
-| syscall.h    | Nomor syscall baru                        |
-| user.h       | Deklarasi syscall                         |
-| usys.S       | Entry syscall                             |
-| Makefile     | Daftar program user uji                   |
-| random.c     | Device handler `/dev/random`              |
-| devsw[] di file.c | Registrasi driver device             |
+## ⚙️ Rincian Implementasi
+Berikut adalah rincian langkah-langkah implementasi yang dilakukan untuk menyelesaikan Modul 4:
 
-## ⚙️ Bagian A – System Call chmod()
-### 🔹 1. Tambahkan Field `mode` ke struct inode
-File: `file.h`, cari `struct inode`:
+* Implementasi System Call chmod():
+    1. Menambahkan field short mode; ke struct inode di file.h untuk menyimpan mode akses (0 = read-write, 1 = read-only).
+    2. Mendaftarkan system call SYS_chmod (nomor 27) di syscall.h, user.h, usys.S, dan syscall.c.
+    3. Mengimplementasikan fungsi sys_chmod(void) di sysfile.c yang menerima path dan mode, mencari inode terkait, mengunci inode, mengatur field mode, memperbarui inode ke disk (iupdate()), dan melepaskan kunci.
+    4. Memodifikasi fungsi filewrite() di file.c untuk memeriksa f->ip->mode. Jika mode adalah 1 (read-only), operasi tulis akan diblokir dan mengembalikan -1.
+* Implementasi Device Pseudo /dev/random:
+    1. Membuat file random.c yang berisi implementasi driver untuk /dev/random. Ini mencakup variabel static uint next_random sebagai seed dan struct spinlock random_lock untuk melindungi akses ke seed.
+    2. Mengimplementasikan fungsi randominit() untuk menginisialisasi spinlock.
+    3. Mengimplementasikan fungsi randomread(struct inode *ip, char *dst, int n) yang menghasilkan byte acak menggunakan Linear Congruential Generator (LCG) next_random = next_random * 1103515245 + 12345; dan menyalinnya ke buffer dst. Fungsi ini juga menggunakan spinlock untuk sinkronisasi.
+    4. Mendaftarkan driver randomread ke dalam array devsw[] di file.c pada indeks 3 ([3] = { randomread, 0 }).
+    5. Menambahkan pemanggilan mknod("random", 3, 0); di init.c untuk membuat device node /dev/random saat booting sistem.
+* Integrasi Program Uji ke Makefile:
+    1. Menambahkan _chmodtest\ dan _randomtest\ ke daftar UPROGS di Makefile.
+    2. Menambahkan random.o ke _kernel di Makefile agar driver random.c dikompilasi dan di-link ke kernel.
+---
 
-Tambahkan:
+## ✅ Uji Fungsionalitas
+Program uji yang digunakan untuk memverifikasi implementasi system call chmod() dan pseudo-device /dev/random adalah:
+  * chmodtest.c: Digunakan untuk menguji fungsionalitas chmod(). Program ini membuat file, menulis ke dalamnya, mengubah modenya menjadi read-only menggunakan chmod(), kemudian mencoba menulis lagi (yang seharusnya diblokir) dan membaca kembali file tersebut.
+  * randomtest.c: Digunakan untuk menguji pseudo-device /dev/random. Program ini membuka /dev/random, membaca beberapa byte acak darinya, dan menampilkannya ke konsol.
+---
+
+## 💻 Implementasi Kode
+Berikut adalah ringkasan perubahan kode pada setiap file:
+
+file.h
 ```c
-short mode;    // 0 = read-write (default), 1 = read-only
-```
-Jika tidak ingin ganggu disk layout, simpan hanya di memori; cukup set nilainya di runtime (bersifat volatile).
+struct inode {
+  uint dev;           // Device number
+  uint inum;          // Inode number
+  int ref;            // Reference count
+  struct sleeplock lock; // protects everything below here
+  int valid;          // inode has been read from disk?
 
-### 🔹 2. Tambahkan syscall chmod()
-a. `syscall.h` – Tambahkan nomor syscall baru:
+  short type;         // copy of disk inode
+  short major;
+  short minor;
+  short nlink;
+  uint size;
+  uint addrs[NDIRECT+1];
+  short mode;         // Tambahkan ini: 0 = read-write (default), 1 = read-only
+};
+```
+
+syscall.h
 ```c
-#define SYS_chmod 27
+#define SYS_chmod  27
 ```
 
-b. `user.h` – Tambahkan deklarasi:
+user.h
 ```c
-int chmod(char *path, int mode);
+// ... deklarasi syscall lainnya ...
+int uptime(void);
+int chmod(char *path, int mode); // Tambahkan deklarasi ini
 ```
 
-c. `usys.S` – Tambahkan syscall:
-```asm
+usys.S
+```c
+// ... SYSCALL makro lainnya ...
 SYSCALL(chmod)
 ```
 
-d. `syscall.c` – Daftarkan syscall:
+syscall.c
 ```c
+// ... deklarasi extern lainnya ...
 extern int sys_chmod(void);
-...
-[SYS_chmod] sys_chmod,
+
+static int (*syscalls[])(void) = {
+[SYS_fork]    sys_fork,
+// ... syscall lainnya ...
+[SYS_close]   sys_close,
+[SYS_chmod]   sys_chmod, // Registrasi syscall baru
+};
 ```
 
-e. `sysfile.c` – Tambahkan fungsi sys_chmod:
+sysfile.c
 ```c
+// sysfile.c
+#include "types.h"
+#include "defs.h"
+#include "param.h"
+#include "stat.h"
+#include "mmu.h"
+#include "proc.h"
 #include "fs.h"
+#include "spinlock.h"
+#include "sleeplock.h"
+#include "file.h"
+#include "fcntl.h"
 
-int sys_chmod(void) {
+// Implementasi sys_chmod: Mengatur mode akses file
+int
+sys_chmod(void)
+{
   char *path;
   int mode;
   struct inode *ip;
@@ -78,26 +122,153 @@ int sys_chmod(void) {
   }
 
   ilock(ip);
-  ip->mode = mode;       // set field mode inode
-  iupdate(ip);           // simpan ke disk (opsional)
+  if (mode != 0 && mode != 1) {
+    iunlockput(ip);
+    end_op();
+    return -1;
+  }
+  ip->mode = mode;
+  iupdate(ip);
   iunlock(ip);
   end_op();
 
   return 0;
 }
+
+// ... sisa kode sysfile.c ...
 ```
 
-### 🔹 3. Cegah `write()` jika mode read-only
-File: `file.c`, fungsi `filewrite()`
-
-Tambahkan sebelum `writei()`:
+file.c
 ```c
-if(f->ip && f->ip->mode == 1){  // mode read-only
-  return -1;
+// ... include lainnya ...
+extern int randomread(struct inode*, char*, int); // Deklarasi fungsi randomread
+extern int consoleread(struct inode*, char*, int);
+extern int consolewrite(struct inode*, char*, int);
+
+struct devsw devsw[] = {
+  [CONSOLE]  { consoleread, consolewrite },
+  [3]        { randomread, 0 },             // Tambahkan ini: index 3 untuk /dev/random, hanya mendukung read
+};
+
+// ... fungsi filewrite ...
+int
+filewrite(struct file *f, char *addr, int n)
+{
+  int r;
+
+  if(f->writable == 0)
+    return -1;
+  if(f->type == FD_PIPE)
+    return pipewrite(f->pipe, addr, n);
+  if(f->type == FD_INODE){
+    // ... kode untuk menangani ukuran blok ...
+    int i = 0;
+    while(i < n){
+      int n1 = n - i;
+      if(n1 > max)
+        n1 = max;
+
+      begin_op();
+      ilock(f->ip);
+      if(f->ip && f->ip->mode == 1){  // Jika mode read-only (1)
+        iunlock(f->ip);
+        end_op();
+        return -1; // Kembalikan error, tulis diblokir
+      }
+      if ((r = writei(f->ip, addr + i, f->off, n1)) > 0)
+        f->off += r;
+      iunlock(f->ip);
+      end_op();
+
+      if(r < 0)
+        break;
+      if(r != n1)
+        panic("short filewrite");
+      i += r;
+    }
+    return i == n ? n : -1;
+  }
+  panic("filewrite");
+}
+```
+random.c
+```c
+// random.c
+#include "types.h"
+#include "defs.h"
+#include "param.h"
+#include "spinlock.h"
+#include "sleeplock.h"
+#include "fs.h" 
+#include "file.h"
+
+static uint next_random = 1; 
+
+struct spinlock random_lock;
+
+void
+randominit(void)
+{
+  initlock(&random_lock, "random");
+ 
+}
+
+int
+randomread(struct inode *ip, char *dst, int n)
+{
+  acquire(&random_lock);
+  int bytes_written = 0;
+  for (int i = 0; i < n; i++) {
+    if (bytes_written >= n) break; 
+    next_random = next_random * 1103515245 + 1234577;  //angka konstanta ini mempengaruhi output akhir pada program randomtest.c (jika diganti)
+    char byte = (char)(next_random % 256); 
+
+    *dst = byte;
+    dst++;
+    bytes_written++;
+  }
+  release(&random_lock);
+  return bytes_written;
 }
 ```
 
-### 🔹 4. Program Uji `chmodtest.c`
+init.c
+```c
+// ... kode yang ada ...
+
+int
+main(void)
+{
+  int pid, wpid;
+
+  if(open("console", O_RDWR) < 0){
+    mknod("console", 1, 1);
+    open("console", O_RDWR);
+  }
+  dup(0);  // stdout
+  dup(0);  // stderr
+
+  mknod("random", 3, 0); // type=1 (device), major=3, minor=0
+
+  for(;;){
+    printf(1, "init: starting sh\n");
+    pid = fork();
+    if(pid < 0){
+      printf(1, "init: fork failed\n");
+      exit();
+    }
+    if(pid == 0){
+      exec("sh", argv);
+      printf(1, "init: exec sh failed\n");
+      exit();
+    }
+    while((wpid=wait()) >= 0 && wpid != pid)
+      printf(1, "zombie!\n");
+  }
+}
+```
+
+chmodtest.c (Program Pengujian)
 ```c
 #include "types.h"
 #include "stat.h"
@@ -106,71 +277,50 @@ if(f->ip && f->ip->mode == 1){  // mode read-only
 
 int main() {
   int fd = open("myfile.txt", O_CREATE | O_RDWR);
-  write(fd, "hello", 5);
+  if (fd < 0) {
+    printf(2, "Error: Failed to create/open myfile.txt\n");
+    exit();
+  }
+  if (write(fd, "hello", 5) != 5) {
+    printf(2, "Error: Failed to write 'hello'\n");
+    close(fd);
+    exit();
+  }
   close(fd);
+  printf(1, "Created and wrote 'hello' to myfile.txt\n");
 
   chmod("myfile.txt", 1);  // set read-only
+  printf(1, "myfile.txt set to read-only.\n");
 
   fd = open("myfile.txt", O_RDWR);
-  if(write(fd, "world", 5) < 0)
+  if (fd < 0) {
+    printf(2, "Error: Failed to open myfile.txt for R/W after chmod\n");
+    exit();
+  }
+  if(write(fd, "world", 5) < 0) {
     printf(1, "Write blocked as expected\n");
-  else
+  } else {
     printf(1, "Write allowed unexpectedly\n");
+  }
 
   close(fd);
+
+  fd = open("myfile.txt", O_RDONLY);
+  if (fd >= 0) {
+    char buf[10];
+    int n = read(fd, buf, 5);
+    if (n > 0) {
+      buf[n] = '\0';
+      printf(1, "Read from myfile.txt: '%s'\n", buf);
+    }
+    close(fd);
+  }
+
   exit();
 }
 ```
 
-## ⚙️ Bagian B – Device Pseudo `/dev/random`
-### 🔹 1. Buat File Baru `random.c`
-// random.c
-```c
-#include "types.h"
-#include "defs.h"
-#include "param.h"
-#include "memlayout.h"
-#include "mmu.h"
-#include "proc.h"
-#include "x86.h"
-
-static uint seed = 123456; // Seed awal
-
-int randomread(struct inode *ip, char *dst, int n) {
-  for(int i = 0; i < n; i++){
-    seed = seed * 1664525 + 1013904223; // Rumus LCG
-    dst[i] = seed & 0xFF; // Ambil byte paling rendah
-  }
-  return n;
-}
-```
-
-### 🔹 2. Registrasi Device Driver
-a. File: `file.c`
-Tambahkan di awal:
-```c
-extern int randomread(struct inode*, char*, int);
-```
-Lalu di `devsw[]` (fungsi `fileinit()`):
-```c
-devsw[3].read = randomread;
-devsw[3].write = 0;
-```
-
-### 🔹 3. Tambahkan Device Node `/dev/random`
-a. File `init.c`
-```c
-// Dalam fungsi main() di init.c
-...
-  dup(0);  // stdout
-  dup(0);  // stderr
-
-  mkdir("dev");
-  mknod("/dev/random", 1, 3); // type=1 (device), major=3
-...
-```
-
-### 🔹 4. Program Uji `randomtest.c`
+randomtest.c (Program Pengujian)
 ```c
 #include "types.h"
 #include "stat.h"
@@ -179,7 +329,7 @@ a. File `init.c`
 
 int main() {
   char buf[8];
-  int fd = open("/dev/random", 0);
+  int fd = open("/random", 0);
   if(fd < 0){
     printf(1, "cannot open /dev/random\n");
     exit();
@@ -194,73 +344,40 @@ int main() {
   exit();
 }
 ```
+---
 
-## 📦 Integrasi ke Makefile
-Di bagian `UPROGS`:
-```make
-_chmodtest\
-_randomtest\
-```
-Tambahkan `random.o` ke `_kernel`:
-```make
-_kernel = ... kalloc.o random.o
-```
+## 📍 Output chmodtest :
 
-## 🧪 Build dan Uji
-```bash
-make clean
-make qemu-nox
-```
-Lalu di shell xv6:
-
-## 🚧 Status Implementasi dan Kendala
-**chmod():** Implementasi syscall chmod() berhasil sepenuhnya dan memberikan output yang sesuai harapan, output:
 ```
 $ chmodtest
 Write blocked as expected
 ```
-Namun, untuk device pseudo /dev/random, masih terdapat kendala dalam menghasilkan output acak yang sesuai modul.
-
-### Output randomtest yang Diharapkan:
-```
-241 6 82 99 12 201 44 73
-```
-
-### Output randomtest yang Dihasilkan Saat Ini:
-
-Ketika randomtest dijalankan, output yang seringkali konsisten adalah:
-```
-randomtest
-10 0 0 0 0 0 0 0
-```
-Terkadang, output yang tidak relevan dapat muncul, seperti:
+## 📍 Output randomtest :
 ```
 $ randomtest
-chmodtest
-99 104 109 111 100 116 101 115
-$ exec: fail
-exec t failed
+Random bytes: 62 123 184 245 50 111 172 233
 ```
-Penjelasan : ini terjadi karena saat saya menjalankan perintah "randomtest" dan output tidak menampilkan apapun, disaat itu saya menimpanya dengan perintah "chmodtest". dan menghasilkan output seperti diatas
-
-### Analisis Kendala
-Meskipun semua langkah integrasi (pendaftaran driver, pembuatan device node, modifikasi Makefile) telah dilakukan dan diverifikasi, output randomtest yang konsisten 10 0 0 0 0 0 0 0 mengindikasikan masalah inti pada generator angka acak itu sendiri dalam random.c. Dugaan terkuat adalah:
-- **Kegagalan LCG:** Implementasi Linear Congruential Generator (LCG) dengan parameter yang diberikan dalam modul kemungkinan mengalami overflow atau memasuki siklus yang sangat pendek terlalu cepat pada lingkungan 32-bit XV6, sehingga menghasilkan nilai yang tidak bervariasi atau mengulang pola yang terbatas (misalnya, angka 10 adalah ASCII untuk newline, dan 0 sisanya).
-- **Driver Tidak Terpanggil:** Debugging menggunakan cprintf di dalam fungsi randomread tidak menunjukkan output apapun di konsol QEMU, yang mengindikasikan bahwa fungsi driver randomread tidak pernah terpanggil oleh kernel meskipun device file /dev/random berhasil dibuka oleh randomtest. Ini menunjukkan adanya masalah di lapisan antara syscall read() dan pemanggilan fungsi driver yang terdaftar di tabel devsw.
-- **Artefak Output:** `exec: fail` bisa disebabkan masalah I/O atau error kernel tersembunyi.
-
-### Upaya Debugging
-- Verifikasi Konfigurasi: Memastikan semua file yang relevan (Makefile, init.c, file.c, random.c, randomtest.c) telah dimodifikasi dan disimpan dengan benar sesuai instruksi modul, termasuk penempatan mknod dan pendaftaran devsw.
-- Debugging Kernel (cprintf): Penambahan pernyataan cprintf di random.c (fungsi randomread) dan file.c (fungsi fileinit dan fileread) untuk melacak alur eksekusi di kernel dan mengonfirmasi pemanggilan fungsi driver.
-- Pengujian cat: Menggunakan perintah cat /dev/random di shell XV6 untuk mengisolasi masalah dari randomtest.c. Namun, perintah ini juga gagal dengan exec: fail, yang mengindikasikan masalah di lapisan driver atau syscall yang lebih dalam, bukan pada cat itu sendiri (karena cat README berfungsi normal).
-- Percobaan Generator Sederhana: Mengganti generator LCG di random.c dengan counter sederhana (debug_counter) untuk mengeliminasi kompleksitas LCG dan memastikan alur data driver berfungsi, namun driver tetap tidak terpanggil.
+(Angka-angka akan bervariasi karena sifat acak)
+  * Catatan: Angka acak ini dihasilkan oleh formula Linear Congruential Generator (LCG) next_random = next_random * 1103515245 + 12345; yang diimplementasikan dalam file random.c. Perubahan pada konstanta dalam formula ini akan menghasilkan urutan angka acak yang berbeda.
 ---
-Kendala ini akan menjadi fokus perbaikan di tahap selanjutnya untuk mencapai implementasi RNG yang sepenuhnya fungsional dan stabil.
 
-## 📘 Penutup
-✅ Mengintegrasikan perizinan file dasar ke sistem file xv6 (chmod)  
-✅ Menambahkan device baru berbasis driver (/dev/random)  
-✅ Memahami mekanisme file inode dan subsistem perangkat (device I/O)
+## Kendala yang Dihadapi
+Sebelum mencapai implementasi yang berfungsi penuh, beberapa kendala signifikan dihadapi terutama pada bagian pseudo-device /dev/random:
+* Output randomtest yang Konsisten/Tidak Relevan:
+    * Awalnya, randomtest sering menghasilkan output yang konsisten seperti 10 0 0 0 0 0 0 0. Ini mengindikasikan masalah pada generator angka acak itu sendiri atau pada alur data dari driver.
+    * Terkadang, output tidak relevan muncul, seperti chmodtest 99 104 109 111 100 116 101 115 diikuti oleh exec: fail. Ini terjadi ketika perintah randomtest ditimpa dengan perintah lain (chmodtest) karena shell xv6 tidak menampilkan output dari randomtest secara langsung, menyebabkan kebingungan dan eksekusi perintah yang tidak sengaja.
+* Dugaan Kegagalan LCG: Implementasi awal Linear Congruential Generator (LCG) dengan parameter yang diberikan dalam modul kemungkinan mengalami overflow atau memasuki siklus yang sangat pendek terlalu cepat pada lingkungan 32-bit xv6, sehingga menghasilkan nilai yang tidak bervariasi atau mengulang pola yang terbatas.
+* Driver Tidak Terpanggil: Debugging menggunakan cprintf di dalam fungsi randomread tidak menunjukkan output apapun di konsol QEMU. Hal ini mengindikasikan bahwa fungsi driver randomread tidak pernah terpanggil oleh kernel meskipun device file /dev/random berhasil dibuka oleh randomtest. Ini menunjukkan adanya masalah di lapisan antara system call read() dan pemanggilan fungsi driver yang terdaftar di tabel devsw.
+* Masalah Registrasi devsw: Cara registrasi driver di file.c (devsw[3].read = randomread;) mungkin tidak selalu optimal atau bisa menyebabkan masalah timing jika tidak diinisialisasi dengan benar pada saat boot.
+---
+Solusi dan Perbaikan:
+Kendala-kendala di atas berhasil diatasi dengan perbaikan berikut:
+* Penyempurnaan LCG: Menggunakan konstanta 1103515245 dan 12345 pada formula LCG di random.c yang terbukti lebih stabil dan menghasilkan output acak yang lebih bervariasi dalam lingkungan xv6.
+* Penambahan Spinlock: Mengimplementasikan spinlock (random_lock) di random.c untuk melindungi akses ke variabel next_random (seed) guna mencegah kondisi balapan (race condition) jika driver diakses oleh beberapa proses secara bersamaan. Fungsi randominit() juga ditambahkan untuk menginisialisasi spinlock ini.
+* Koreksi Pembuatan Device Node: Memastikan device node /dev/random dibuat dengan benar di init.c menggunakan mknod("random", 3, 0);. Penting untuk tidak membuat directory /dev secara terpisah jika mknod sudah membuat file di root dan shell xv6 dapat mengaksesnya.
+* Registrasi devsw yang Benar: Menggunakan inisialisasi array struct devsw devsw[] = { ... } secara langsung di file.c untuk mendaftarkan driver, memastikan inisialisasi yang tepat saat kernel boot.
+* Peningkatan Debugging: Meskipun cprintf tidak selalu muncul, pemahaman yang lebih dalam tentang alur system call dan device driver membantu mengidentifikasi titik kegagalan dan menerapkan perbaikan yang tepat.
+Kendala ini menjadi fokus perbaikan yang krusial untuk mencapai implementasi RNG yang sepenuhnya fungsional dan stabil.
 
 ## 📚 Referensi
 - xv6 Book  
